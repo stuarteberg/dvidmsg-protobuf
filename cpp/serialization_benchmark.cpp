@@ -79,17 +79,30 @@ template <> std::string get_type_name<int64_t>()    { return "i64" ; }
 template <> std::string get_type_name<float>()      { return "float32" ; }
 template <> std::string get_type_name<double>()     { return "float64" ; }
 
-template<typename T_>
-::google::protobuf::RepeatedField< T_ >* get_mutable_data_field( Array::ArrayData * pDataFields )
+template <typename T_, typename T2_ = typename boost::disable_if_c<sizeof(T_) == sizeof(uint16_t)>::type>
+::google::protobuf::RepeatedField<T_>* get_mutable_data_field( Array::ArrayData * pDataFields )
 { BOOST_STATIC_ASSERT( sizeof(T_) == 0 && "No message field member defined for this type!" ) ; }
 
 // Note: uint8 and int8 are not implemented because they use std::string instead of RepeatedField<T>
-template <> ::google::protobuf::RepeatedField<uint32_t>* get_mutable_data_field( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datau32() ; }
-template <> ::google::protobuf::RepeatedField<int32_t>*  get_mutable_data_field( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datai32() ; }
-template <> ::google::protobuf::RepeatedField<uint64_t>* get_mutable_data_field( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datau64() ; }
-template <> ::google::protobuf::RepeatedField<int64_t>*  get_mutable_data_field( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datai64() ; }
-template <> ::google::protobuf::RepeatedField<float>*    get_mutable_data_field( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datafloat32() ; }
-template <> ::google::protobuf::RepeatedField<double>*   get_mutable_data_field( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datafloat64() ; }
+template <> ::google::protobuf::RepeatedField<uint32_t>* get_mutable_data_field<uint32_t>( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datau32() ; }
+template <> ::google::protobuf::RepeatedField<int32_t>*  get_mutable_data_field<int32_t>( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datai32() ; }
+template <> ::google::protobuf::RepeatedField<uint64_t>* get_mutable_data_field<uint64_t>( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datau64() ; }
+template <> ::google::protobuf::RepeatedField<int64_t>*  get_mutable_data_field<int64_t>( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datai64() ; }
+template <> ::google::protobuf::RepeatedField<float>*    get_mutable_data_field<float>( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datafloat32() ; }
+template <> ::google::protobuf::RepeatedField<double>*   get_mutable_data_field<double>( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datafloat64() ; }
+
+// We have to use special cases for the 16-bit dtypes.
+// Hence, we overload the above template function with two additional template functions,
+// and provide a specialization for each.
+template <typename T_, typename T2_ = typename boost::enable_if<boost::is_same<T_, uint16_t> >::type>
+::google::protobuf::RepeatedField<uint32_t>* get_mutable_data_field( Array::ArrayData * pDataFields )
+{ BOOST_STATIC_ASSERT( sizeof(T_) == 0 && "No message field member defined for this type!" ) ; }
+template <> ::google::protobuf::RepeatedField<uint32_t>* get_mutable_data_field<uint16_t>( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datau32() ; }
+
+template <typename T_, typename T2_ = typename boost::enable_if<boost::is_same<T_, int16_t> >::type>
+::google::protobuf::RepeatedField<int32_t>* get_mutable_data_field( Array::ArrayData * pDataFields )
+{ BOOST_STATIC_ASSERT( sizeof(T_) == 0 && "No message field member defined for this type!" ) ; }
+template <> ::google::protobuf::RepeatedField<int32_t>* get_mutable_data_field<int16_t>( Array::ArrayData * pDataFields ) { return pDataFields->mutable_datai32() ; }
 
 template <typename T_>
 void populate_description( DatasetDescription * pDescription )
@@ -223,8 +236,8 @@ int main()
     run_benchmark<uint8_t>( 100*100*100 ) ;
     run_benchmark<int8_t>( 100*100*100 ) ;
 
-//    run_benchmark<uint16_t>( 100*100*100 ) ;
-//    run_benchmark<int16_t>( 100*100*100 ) ;
+    run_benchmark<uint16_t>( 100*100*100 ) ;
+    run_benchmark<int16_t>( 100*100*100 ) ;
 
     run_benchmark<uint32_t>( 100*100*100 ) ;
     run_benchmark<int32_t>( 100*100*100 ) ;
