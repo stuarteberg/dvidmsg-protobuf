@@ -1,0 +1,40 @@
+package dvidmsg;
+
+message Bounds {
+    repeated uint32 start = 1;
+    repeated uint32 stop = 2;
+}
+
+message DatasetDescription {
+    required Bounds bounds = 1;
+    repeated string axisNames = 2;  // Each must be one of 't','x','y','z', or 'c' (no duplicates)
+    required string datatype = 3;   // Must be one of 'i8', 'u8', 'i16', 'u16', 'i32', 'u32', 'float32', 'float64'
+}
+
+message Array {
+    message ArrayData {
+        // Only one of these will be non-empty.
+        optional bytes data8 = 1;           // Used for u8 AND i8
+        repeated uint32 dataU32 = 2;        // Used for u32 AND u16
+        repeated int32 dataI32 = 3;         // Used for i32 AND i16 
+        repeated uint64 dataU64 = 4;        // Used for u64
+        repeated int64 dataI64 = 5;         // Used for i64
+        repeated float dataFloat32 = 6;     // Used for float32
+        repeated double dataFloat64 = 7;     // Used for float64
+    
+        // repeated list<uint16> data16;    // protobuf doesn't support 16-bit ints!
+    }
+
+    required DatasetDescription description = 1;
+    required ArrayData data = 2;
+}
+
+//service CutoutService {
+//    list<string> listDatasets()
+//    DatasetDescription getDescription(1: string datasetName)    
+//    Array getCutoutBlock(1: string datasetName, 2: Bounds subregion) # TODO: Add param for dag node uuid
+//}
+
+//service BenchmarkService {
+//    Array echoData(1: Array array)
+//}
