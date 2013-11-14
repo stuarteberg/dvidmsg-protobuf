@@ -131,8 +131,12 @@ void populate_description( DatasetDescription * pDescription )
     pDescription->set_datatype( type_name ) ;
 }
 
+// ******************************************************************
+// Default implementation of populate_data (everything but 8-bit)
+// ******************************************************************
 template <typename T_>
-void populate_data( Array::ArrayData * pDataFields, std::vector<T_> const & vec )
+void populate_data( Array::ArrayData * pDataFields, std::vector<T_> const & vec
+    , typename boost::disable_if_c<sizeof(T_) == sizeof(uint8_t)>::type* dummy = 0 )
 {
     get_mutable_data_field<T_>( pDataFields )->Reserve( vec.size() ) ;
     BOOST_FOREACH( T_ d, vec )
@@ -141,26 +145,17 @@ void populate_data( Array::ArrayData * pDataFields, std::vector<T_> const & vec 
     }
 }
 
+// ******************************************************************
 // Special implementation for int8 and uint8
-template<typename T_>
-void populate_byte_data( Array::ArrayData * pDataFields, std::vector<T_> const & vec )
-
+//  (which use strings instead of RepeatedField)
+// ******************************************************************
+template <typename T_>
+void populate_data( Array::ArrayData * pDataFields, std::vector<T_> const & vec
+    , typename boost::enable_if_c<sizeof(T_) == sizeof(uint8_t)>::type* dummy = 0 )
 {
     std::string * pBytes = pDataFields->mutable_data8() ;
     pBytes->reserve( vec.size() ) ;
     std::copy( vec.begin(), vec.end(), std::back_inserter( *pBytes ) ) ;
-}
-
-template <>
-void populate_data<uint8_t>( Array::ArrayData * pDataFields, std::vector<uint8_t> const & vec )
-{
-    populate_byte_data<uint8_t>( pDataFields, vec ) ;
-}
-
-template <>
-void populate_data<int8_t>( Array::ArrayData * pDataFields, std::vector<int8_t> const & vec )
-{
-    populate_byte_data<int8_t>( pDataFields, vec ) ;
 }
 
 // ******************************************************************
