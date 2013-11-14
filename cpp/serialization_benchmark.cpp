@@ -127,7 +127,6 @@ void populate_description( DatasetDescription * pDescription )
     }
 
     std::string type_name = get_type_name<T_>() ;
-    std::cout << "Type name is: " << type_name << std::endl ;
     pDescription->set_datatype( type_name ) ;
 }
 
@@ -174,14 +173,32 @@ ArrayPtr convert_to_protobuf( std::vector<T_> const & vec )
     return pResult ;
 }
 
+struct BenchmarkStats
+{
+    std::string type_name ;
+    float image_size_mb ;
+
+    float message_size_mb;
+
+    float message_creation_seconds;
+    float serialization_seconds;
+    float deserialization_seconds;
+    float array_creation_seconds;
+};
+
 // ******************************************************************
 // @details
 // Run a serialization and deserialization benchmark for an array of
 //  the given datatype and length.
 // ******************************************************************
 template <typename T_>
-void run_benchmark( size_t len )
+BenchmarkStats run_benchmark( size_t len )
 {
+    BenchmarkStats stats;
+
+    stats.type_name = get_type_name<T_>() ;
+    stats.image_size_mb = len / 1.0e6 ;
+
     std::vector<T_> random_data;
     populate_random<T_>( random_data, len );
 
@@ -189,18 +206,27 @@ void run_benchmark( size_t len )
 
     // Serialize
     {
-        ArrayPtr pArray = convert_to_protobuf( random_data ) ;
+        ArrayPtr pArray ;
 
-        Timer timer ;
+        Timer creation_timer ;
         {
-            Timer::Token token(timer) ;
+            Timer::Token token(creation_timer) ;
+            pArray = convert_to_protobuf( random_data ) ;
+        }
+        stats.message_creation_seconds = creation_timer.seconds();
+
+        Timer serialization_timer ;
+        {
+            Timer::Token token(serialization_timer) ;
             pArray->SerializeToOstream( &ss ) ;
         }
-        std::cout << "Serialization took: " << timer.seconds() << " seconds." << std::endl ;
+        stats.serialization_seconds = serialization_timer.seconds();
+        //std::cout << "Serialization took: " << timer.seconds() << " seconds." << std::endl ;
 
         int bufferSize = ss.tellp() - ss.tellg() ;
-        std::cout << std::fixed << std::setprecision(3) ;
-        std::cout << "Serialized data is " << bufferSize / 1.0e6 << " MB" << std::endl ;
+        stats.message_size_mb = bufferSize / 1.0e6 ;
+        //std::cout << std::fixed << std::setprecision(3) ;
+        //std::cout << "Serialized data is " << bufferSize / 1.0e6 << " MB" << std::endl ;
     }
 
     // Deserialize
@@ -212,12 +238,38 @@ void run_benchmark( size_t len )
             Timer::Token token(timer) ;
             pArray->ParseFromIstream( &ss ) ;
         }
-        std::cout << "Deserialization took: " << timer.seconds() << " seconds." << std::endl ;
+        stats.deserialization_seconds = timer.seconds();
+        //std::cout << "Deserialization took: " << timer.seconds() << " seconds." << std::endl ;
     }
 
-    std::cout << "Finished." << std::endl ;
+    stats.array_creation_seconds = -1.0; // TODO
+
+    return stats;
 }
 
+void print_stat_header()
+{
+    std::cout << "image size,"
+              << "dtype,"
+              << "encoded message size,"
+              << "message creation time,"
+              << "serialization time,"
+              << "deserialization time,"
+              << "array creation time"
+              << "\n" ;
+}
+
+void print_stats( BenchmarkStats const & stats )
+{
+    std::cout << stats.image_size_mb << ','
+              << stats.type_name << ','
+              << stats.message_size_mb << ','
+              << stats.message_creation_seconds << ','
+              << stats.serialization_seconds << ','
+              << stats.deserialization_seconds << ','
+              << stats.array_creation_seconds
+              << '\n' ;
+}
 
 // ******************************************************************
 // Entry point.
@@ -228,20 +280,32 @@ int main()
     // compatible with the version of the headers we compiled against.
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    run_benchmark<uint8_t>( 100*100*100 ) ;
-    run_benchmark<int8_t>( 100*100*100 ) ;
+    std::vector<size_t> sizes = boost::assign::list_of
+        (100*100)
+        (1000*1000)
+        (10*1000*1000)
+        (100*1000*1000)
+        (1000*1000*1000);
 
-    run_benchmark<uint16_t>( 100*100*100 ) ;
-    run_benchmark<int16_t>( 100*100*100 ) ;
+    print_stat_header();
 
-    run_benchmark<uint32_t>( 100*100*100 ) ;
-    run_benchmark<int32_t>( 100*100*100 ) ;
+    BOOST_FOREACH(size_t size, sizes)
+    {
+        print_stats( run_benchmark<uint8_t>( size ) ) ;
+        print_stats( run_benchmark<int8_t>( size ) ) ;
 
-    run_benchmark<uint64_t>( 100*100*100 ) ;
-    run_benchmark<int64_t>( 100*100*100 ) ;
+        print_stats( run_benchmark<uint16_t>( size ) ) ;
+        print_stats( run_benchmark<int16_t>( size ) ) ;
 
-    run_benchmark<float>( 100*100*100 ) ;
-    run_benchmark<double>( 100*100*100 ) ;
+        print_stats( run_benchmark<uint32_t>( size ) ) ;
+        print_stats( run_benchmark<int32_t>( size ) ) ;
+
+        print_stats( run_benchmark<uint64_t>( size ) ) ;
+        print_stats( run_benchmark<int64_t>( size ) ) ;
+
+        print_stats( run_benchmark<float>( size ) ) ;
+        print_stats( run_benchmark<double>( size ) ) ;
+    }
 
 	return 0;
 }
