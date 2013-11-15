@@ -47,17 +47,45 @@ T_ get_uniform_random()
     return dist(gen) ;
 }
 
+template <>
+float get_uniform_random<float>()
+{
+    // For some reason using the true max/min possible values is very slow.
+    //static const double lowest = boost::numeric::bounds<float>::lowest() ;
+    //static const double highest = boost::numeric::bounds<float>::highest() ;
+    //static boost::random::uniform_real_distribution<float> dist(lowest, highest);
+
+    // Just use max/min of -1/1 for speed.  Should be almost random data (except exponent...)
+    static boost::random::uniform_real_distribution<float> dist(-1.0, 1.0);
+    static boost::random::mt19937 gen;
+    return dist(gen) ;
+}
+
+template <>
+double get_uniform_random<double>()
+{
+    // For some reason using the true max/min possible values is very slow.
+    //static const double lowest = boost::numeric::bounds<double>::lowest() ;
+    //static const double highest = boost::numeric::bounds<double>::highest() ;
+    //static boost::random::uniform_real_distribution<double> dist(lowest, highest);
+
+    // Just use max/min of -1/1 for speed
+    static boost::random::uniform_real_distribution<float> dist(-1.0, 1.0);
+    static boost::random::mt19937 gen;
+    return dist(gen) ;
+}
+
 // ******************************************************************
 // @details
 // Populate a vector with uniformly distributed random data
 // ******************************************************************
 template <typename T_>
-void populate_random( std::vector<T_> & vec, size_t len )
+void fill_random( std::vector<T_> & vec, size_t len )
 {
     vec.resize(len);
     BOOST_FOREACH( T_ & x, vec )
     {
-        x = get_uniform_random<uint32_t>() ;
+        x = get_uniform_random<T_>() ;
     }
 }
 
@@ -197,10 +225,10 @@ BenchmarkStats run_benchmark( size_t len )
     BenchmarkStats stats;
 
     stats.type_name = get_type_name<T_>() ;
-    stats.image_size_mb = len / 1.0e6 ;
+    stats.image_size_mb = len * sizeof(T_) / 1.0e6 ;
 
     std::vector<T_> random_data;
-    populate_random<T_>( random_data, len );
+    fill_random<T_>( random_data, len );
 
     std::stringstream ss ;
 
