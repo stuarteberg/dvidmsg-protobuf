@@ -1,7 +1,7 @@
 import contextlib
 import numpy
 import StringIO
-from lazyflow.utility import Timer
+from timer import Timer
 
 from dvidmsg_pb2 import Array
 import proto_conversions
