@@ -20,7 +20,7 @@ message Array {
         repeated uint64 dataU64 = 4;        // Used for u64
         repeated int64 dataI64 = 5;         // Used for i64
         repeated float dataFloat32 = 6;     // Used for float32
-        repeated float dataFloat64 = 7;     // Used for float64
+        repeated double dataFloat64 = 7;     // Used for float64
     
         // repeated list<uint16> data16;    // protobuf doesn't support 16-bit ints!
     }
