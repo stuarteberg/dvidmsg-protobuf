@@ -1,0 +1,19 @@
+SETUP
+-----
+$ mkdir build
+$ cd build
+$ cmake -DBUILDEM_DIR=/path/to/bpd ..
+
+CPP BENCHMARK
+-------------
+# Make CPP serialization benchmark (including auto-gen protobuf sources)
+$ make dvidmsg-cpp-benchmark
+# Run benchmark
+$ ./bin/dvidmsg-cpp-benchmark
+
+PYTHON BENCHMARK
+----------------
+# Autogenerate Python protobuf classes
+$ make gen-protobuf-py
+# Run benchmark
+$ /path/to/bpd/bin/python ../py/serialization_benchmark.py
