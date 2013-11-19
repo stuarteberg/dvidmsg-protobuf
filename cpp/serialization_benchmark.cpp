@@ -310,6 +310,7 @@ int main()
 
     std::vector<size_t> sizes = boost::assign::list_of
         (100*100)
+        (100*1000)
         (1000*1000)
         (10*1000*1000)
         (100*1000*1000)
