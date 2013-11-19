@@ -46,10 +46,29 @@ else ()
         DEPENDS ${APP_DEPENDENCIES} )
 
     ##########################
+    ## Protobuf auto-gen Python
+    add_custom_target(gen-protobuf-py
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      COMMAND  ${BUILDEM_ENV_STRING} protoc --proto_path=. --python_out=py dvidmsg.proto
+      DEPENDS dvidmsg.proto
+      COMMENT "Autogenerating protobuf Python files..."
+      VERBATIM )
+
+    ##########################
+    ## Protobuf auto-gen C++
+    add_custom_command(
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      OUTPUT ${CMAKE_SOURCE_DIR}/cpp/dvidmsg.pb.cc
+      COMMAND ${BUILDEM_ENV_STRING} protoc --proto_path=. --cpp_out=cpp dvidmsg.proto
+      DEPENDS dvidmsg.proto
+      COMMENT "Autogenerating protobuf C++ files..."
+      VERBATIM )
+
+    ##########################
     ## Serialization Benchmark
-    add_executable(dvidmsg-cpp-benchmark serialization_benchmark.cpp
-                                         timer.cpp
-                                         dvidmsg.pb.cc )
+    add_executable(dvidmsg-cpp-benchmark cpp/serialization_benchmark.cpp
+                                         cpp/timer.cpp
+                                         cpp/dvidmsg.pb.cc )
 
     #add_dependencies(dvidmsg-cpp-benchmark AppDependencies)
     target_link_libraries(dvidmsg-cpp-benchmark ${protobuf_LIBRARIES} ${boost_LIBS})
