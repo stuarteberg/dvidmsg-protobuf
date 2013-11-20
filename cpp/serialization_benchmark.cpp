@@ -201,6 +201,51 @@ ArrayPtr convert_to_protobuf( std::vector<T_> const & vec )
     return pResult ;
 }
 
+template <typename T_>
+boost::shared_ptr<std::vector<T_> > convert_from_protobuf( Array::ArrayData const & dataFields )
+{
+    // Instead of reading the array data into some image, we'll just copy it into a big vector.
+    // This should be roughly the same as a malloc + memcpy, but this function is here for completeness.
+
+    boost::shared_ptr<std::vector<T_> > pVec( new std::vector<T_>() ) ;
+    if ( sizeof(T_) == sizeof(uint8_t) )
+    {
+        std::string const & bytes = dataFields.data8() ;
+        std::copy( bytes.begin(), bytes.end(), std::back_inserter( *pVec ) ) ;
+    }
+    else if ( boost::is_same<T_, uint16_t>::value or boost::is_same<T_, uint32_t>::value ) // both 16-bit and 32-bit use the same field
+    {
+        ::google::protobuf::RepeatedField< uint32_t > const & datau32 = dataFields.datau32() ;
+        std::copy( datau32.begin(), datau32.end(), std::back_inserter( *pVec ) ) ;
+    }
+    else if ( boost::is_same<T_, int16_t>::value or boost::is_same<T_, int32_t>::value ) // both 16-bit and 32-bit use the same field
+    {
+        ::google::protobuf::RepeatedField< int32_t > const & datai32 = dataFields.datai32() ;
+        std::copy( datai32.begin(), datai32.end(), std::back_inserter( *pVec ) ) ;
+    }
+    else if ( boost::is_same<T_, uint64_t>::value )
+    {
+        ::google::protobuf::RepeatedField< uint64_t > const & datau64 = dataFields.datau64() ;
+        std::copy( datau64.begin(), datau64.end(), std::back_inserter( *pVec ) ) ;
+    }
+    else if ( boost::is_same<T_, int64_t>::value )
+    {
+        ::google::protobuf::RepeatedField< int64_t > const & datai64 = dataFields.datai64() ;
+        std::copy( datai64.begin(), datai64.end(), std::back_inserter( *pVec ) ) ;
+    }
+    else if ( boost::is_same<T_, float>::value )
+    {
+        ::google::protobuf::RepeatedField< float > const & datafloat32 = dataFields.datafloat32() ;
+        std::copy( datafloat32.begin(), datafloat32.end(), std::back_inserter( *pVec ) ) ;
+    }
+    else if ( boost::is_same<T_, double>::value )
+    {
+        ::google::protobuf::RepeatedField< double > const & datafloat64 = dataFields.datafloat64() ;
+        std::copy( datafloat64.begin(), datafloat64.end(), std::back_inserter( *pVec ) ) ;
+    }
+    return pVec ;
+}
+
 struct BenchmarkStats
 {
     std::string type_name ;
@@ -268,9 +313,14 @@ BenchmarkStats run_benchmark( size_t len )
         }
         stats.deserialization_seconds = timer.seconds();
         //std::cout << "Deserialization took: " << timer.seconds() << " seconds." << std::endl ;
-    }
 
-    stats.array_creation_seconds = -1.0; // TODO
+        Timer conversion_timer ;
+        {
+            Timer::Token token(conversion_timer) ;
+            boost::shared_ptr<std::vector<T_> > pVec = convert_from_protobuf<T_>( pArray->data() ) ;
+        }
+        stats.array_creation_seconds = conversion_timer.seconds() ;
+    }
 
     return stats;
 }
