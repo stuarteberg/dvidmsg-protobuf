@@ -284,7 +284,7 @@ void print_stat_header()
               << "serialization time,"
               << "deserialization time,"
               << "array creation time"
-              << "\n" ;
+              << std::endl ;
 }
 
 void print_stats( BenchmarkStats const & stats )
@@ -296,7 +296,7 @@ void print_stats( BenchmarkStats const & stats )
               << stats.serialization_seconds << ','
               << stats.deserialization_seconds << ','
               << stats.array_creation_seconds
-              << '\n' ;
+              << std::endl ;
 }
 
 // ******************************************************************
@@ -329,10 +329,11 @@ int main()
         print_stats( run_benchmark<uint32_t>( size ) ) ;
         print_stats( run_benchmark<int32_t>( size ) ) ;
 
+        print_stats( run_benchmark<float>( size ) ) ;
+
         print_stats( run_benchmark<uint64_t>( size ) ) ;
         print_stats( run_benchmark<int64_t>( size ) ) ;
 
-        print_stats( run_benchmark<float>( size ) ) ;
         print_stats( run_benchmark<double>( size ) ) ;
     }
 

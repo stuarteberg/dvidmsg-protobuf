@@ -108,8 +108,9 @@ def main():
     dtypes = [ numpy.uint8, numpy.int8,
                numpy.uint16, numpy.int16,
                numpy.uint32, numpy.int32,
+               numpy.float32, 
                numpy.uint64, numpy.int64,
-               numpy.float32, numpy.float64 ]
+               numpy.float64 ]
     for shape in shapes:
         for dtype in dtypes:
             print_stats( run_benchmark( dtype, shape ) )
